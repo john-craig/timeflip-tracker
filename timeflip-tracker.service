@@ -1,0 +1,10 @@
+[Unit]
+Description=My CLI Program
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/timeflip-tracker
+
+[Install]
+WantedBy=multi-user.target

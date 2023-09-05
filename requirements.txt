@@ -1,0 +1,17 @@
+autopep8==1.5.7
+bleak==0.20.2
+certifi==2023.5.7
+charset-normalizer==3.2.0
+dbus-fast==1.86.0
+dbus-next==0.2.3
+flake8==3.9.2
+flake8-quotes==3.3.0
+idna==3.4
+mccabe==0.6.1
+pycodestyle==2.7.0
+pyflakes==2.3.1
+python-dotenv==1.0.0
+pytimefliplib==0.1
+requests==2.31.0
+toml==0.10.2
+urllib3==2.0.4
