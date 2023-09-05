@@ -28,7 +28,7 @@ install:
 	install -m 755 $(BIN_SRC_DIR)/$(BINARY_NAME) $(BIN_DEST_DIR)
 	install -m 644 $(SERVICE_NAME) $(SERVICE_DEST_DIR)
 	install -d -m 755 $(CONFIG_DEST_DIR)
-    install -m 644 $(CONFIG_NAME) $(CONFIG_DEST_DIR)
+	install -m 644 $(CONFIG_NAME) $(CONFIG_DEST_DIR)
 	systemctl daemon-reload
 	systemctl enable $(SERVICE_NAME)
 	systemctl start $(SERVICE_NAME)
@@ -37,7 +37,7 @@ uninstall:
 	systemctl stop $(SERVICE_NAME)
 	systemctl disable $(SERVICE_NAME)
 	rm -f $(CONFIG_DEST_DIR)/$(CONFIG_NAME)
-    rmdir $(CONFIG_DEST_DIR)
+	rmdir $(CONFIG_DEST_DIR)
 	rm -f $(BIN_DEST_DIR)/$(BINARY_NAME)
 	rm -f $(SERVICE_DEST_DIR)/$(SERVICE_NAME)
 	systemctl daemon-reload
