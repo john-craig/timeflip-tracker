@@ -22,7 +22,7 @@ all: build
 
 build:
 	$(PIP) install -r requirements.txt
-	PYTHONPATH=env/lib/python3.11/site-packages/ pyinstaller --onefile --collect-all pytimefliplib timeflip-tracker.py
+	PYTHONPATH=env/lib/python3.11/site-packages/ pyinstaller --onefile --collect-submodules dbus_fast --collect-all pytimefliplib timeflip-tracker.py
 
 install:
 	install -m 755 $(BIN_SRC_DIR)/$(BINARY_NAME) $(BIN_DEST_DIR)

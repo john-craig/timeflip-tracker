@@ -8,7 +8,6 @@ from bleak.backends.device import BLEDevice
 import requests
 import asyncio
 import os
-from dotenv import load_dotenv
 import configparser
 
 DEFAULT_CONFIG_PATH = "/etc/timeflip-tracker/config.toml"
@@ -156,18 +155,6 @@ def load_configuration():
     webhook_token = os.getenv("WEBHOOK_TOKEN")
     webhook_url = os.getenv("WEBHOOK_URL")
     config_path = os.getenv("CONFIG_PATH")
-
-    # Now load from .env
-    load_dotenv()
-
-    if not webhook_token:
-        webhook_token = os.getenv("WEBHOOK_TOKEN")
-    
-    if not webhook_url:
-        webhook_url = os.getenv("WEBHOOK_URL")
-    
-    if not config_path:
-        config_path = os.getenv("CONFIG_PATH")
 
     # Finally load from config file
     if not config_path:
