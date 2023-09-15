@@ -188,11 +188,6 @@ def load_configuration():
 def main():
     webhook_token, webhook_url = load_configuration()
 
-    print(webhook_token)
-    print(webhook_url)
-
-    exit()
-
     loop = asyncio.get_event_loop()
 
     try:
