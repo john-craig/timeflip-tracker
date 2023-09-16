@@ -16,7 +16,7 @@ SERVICE_NAME = timeflip-tracker.service
 CONFIG_NAME = config.toml
 
 # Targets
-.PHONY: all install test clean
+.PHONY: all install build test clean
 
 all: build
 

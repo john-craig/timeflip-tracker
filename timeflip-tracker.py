@@ -11,7 +11,10 @@ import os
 import configparser
 
 DEFAULT_CONFIG_PATH = "/etc/timeflip-tracker/config.toml"
-global CURRENT_DAY
+
+current_day = None
+webhook_token = None
+webhook_url = None
 
 class RuntimeClientError(Exception):
     pass
@@ -132,22 +135,26 @@ async def set_facet_colors(client: AsyncClient, color):
         await client.set_color(i, color)
 
 async def actions_on_client(client: AsyncClient):
+    global current_day
     await client.register_notify_facet_v3(event_callback)
 
-    CURRENT_DAY = get_current_day_of_week()
+    current_day = get_current_day_of_week()
 
-    await set_facet_colors(client, weekday_colors[CURRENT_DAY])
+    await set_facet_colors(client, weekday_colors[current_day])
 
     while True:
         await asyncio.sleep(60)
 
-        if get_current_day_of_week() != CURRENT_DAY:
-            CURRENT_DAY = get_current_day_of_week()
+        if get_current_day_of_week() != current_day:
+            current_day = get_current_day_of_week()
 
-            await set_facet_colors(client, weekday_colors[CURRENT_DAY])
+            await set_facet_colors(client, weekday_colors[current_day])
 
 
 def load_configuration():
+    global webhook_token
+    global webhook_url
+
     # Order of precedence:
     #   1) actual environment variable
     #   2) variable contained in .env file
@@ -169,11 +176,9 @@ def load_configuration():
     if not webhook_url:
         webhook_url = config['WEBHOOK']['URL']
 
-    return (webhook_token, webhook_url)
-
 
 def main():
-    webhook_token, webhook_url = load_configuration()
+    load_configuration()
 
     loop = asyncio.get_event_loop()
 
