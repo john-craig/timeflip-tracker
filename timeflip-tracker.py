@@ -5,12 +5,12 @@ import pytimefliplib
 from pytimefliplib.async_client import AsyncClient, DEFAULT_PASSWORD, CHARACTERISTICS, TimeFlipRuntimeError
 from bleak import BleakScanner, BleakClient, BleakError
 from bleak.backends.device import BLEDevice
-import requests
-import asyncio
-import os
+import requests, asyncio, threading, os
 import configparser
 
 DEFAULT_CONFIG_PATH = "/etc/timeflip-tracker/config.toml"
+
+disconnect_sent = False
 
 current_day = None
 webhook_token = None
@@ -47,7 +47,13 @@ weekday_colors = [
 
 # Callbacks
 
-async def event_callback(arg1, event_data):
+def post_facet(facet):
+    activity = "unknown"
+    if facet == -1:
+        activity = "disconnect"
+    else:
+        activity = facet_mapping[facet]
+
     requests.post(
         webhook_url,
         headers={
@@ -55,23 +61,20 @@ async def event_callback(arg1, event_data):
             "Content-Type": "application/json"
         },
         json={
-            "side": event_data[0],
-            "activity": facet_mapping[event_data[0]]
+            "side": facet,
+            "activity": activity
         }
     )
 
+async def event_callback(arg1, event_data):
+    post_facet(event_data[0])
+
 def disconnected_callback(client):
-    requests.post(
-        webhook_url,
-        headers={
-            "Authorization": "Token {}".format(webhook_token),
-            "Content-Type": "application/json"
-        },
-        json={
-            "side": -1,
-            "activity": "disconnected"
-        }
-    )
+    global disconnect_sent
+
+    post_facet(-1)
+
+    disconnect_sent = True
 
 async def find_timeflip():
     """Adapted from Bleak documentation (https://pypi.org/project/bleak/) for the discovery of new devices.
@@ -108,18 +111,31 @@ async def connect_and_run(actions_on_client: Callable[[AsyncClient], Coroutine])
     timeflip_address = timeflip_addresses[0]
     timeflip_password = DEFAULT_PASSWORD
 
-    try:
-        async with AsyncClient(timeflip_address, disconnected_callback=disconnected_callback) as client:
-            # setup
-            print('! Connected to {}'.format(timeflip_address))
+    #for now just always try to reconnect until we're killed
+    while True: 
+        try:
+            async with AsyncClient(timeflip_address, disconnected_callback=disconnected_callback) as client:
+                # setup
+                print('! Connected to {}'.format(timeflip_address))
 
-            await client.setup(password=timeflip_password)
-            print('! Password communicated')
+                await client.setup(password=timeflip_password)
+                print('! Password communicated')
 
-            await actions_on_client(client)
+                await actions_on_client(client)
 
-    except (BleakError, TimeFlipRuntimeError, RuntimeClientError) as e:
-        print('communication error: {}'.format(e), file=sys.stderr)
+        except (BleakError, TimeFlipRuntimeError, RuntimeClientError) as e:
+            print('communication error: {}'.format(e), file=sys.stderr)
+
+            # If we didn't send the disconnect signal, make sure to send
+            # it here
+            global disconnect_sent
+            if not disconnect_sent:
+                post_facet(-1)
+            else:
+                disconnect_sent = False
+        
+        await asyncio.sleep(300)
+        
 
 def get_current_day_of_week():
     # Get the current date
@@ -137,6 +153,10 @@ async def set_facet_colors(client: AsyncClient, color):
 async def actions_on_client(client: AsyncClient):
     global current_day
     await client.register_notify_facet_v3(event_callback)
+
+    # Post the current facet on connect
+    current_facet = await client.current_facet()
+    post_facet(current_facet)
 
     current_day = get_current_day_of_week()
 
@@ -184,7 +204,7 @@ def main():
 
     try:
         loop.run_until_complete(connect_and_run(actions_on_client))
-    except BaseException:
+    except (BaseException, KeyboardInterrupt):
         all_tasks = asyncio.all_tasks(loop=loop)
         for task in all_tasks:
             task.cancel()
@@ -194,6 +214,7 @@ def main():
                 return_exceptions=True # means all tasks get a chance to finish
             )
         )
+
         raise
     finally:
         loop.close()
