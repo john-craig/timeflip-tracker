@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+# May also need 'Privileged' here
+  time-tracker:
+    build:
+    container_name: 'timeflip-tracker'
+    volumes:
+    - /var/run/dbus/:/var/run/dbus/
+    - ./config/config.yaml:/etc/timeflip-tracker/config.yaml

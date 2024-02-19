@@ -1,0 +1,19 @@
+devices:
+- name: My Device
+  mac_address: "XX:XX:XX:XX:XX"
+  password: 0000
+  facets:
+  - value: "studying" #1
+    color: "red"
+  - value: "chores" #2
+    color: "blue"
+  - value: "writing" #3
+  - value: "development" #4
+  - value: "reading" #5
+  - value: "streaming" #6
+  - value: "exercise" #7
+  - value: "administrivia" #8
+  - value: "television" #9
+  - value: "break" #10
+  - value: "music" #11
+  - value: "meeting"  #12
