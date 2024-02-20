@@ -1,7 +1,7 @@
 devices:
 - name: My Device
-  mac_address: "XX:XX:XX:XX:XX"
-  password: 0000
+  mac_address: "D0:A1:FC:9C:B2:46"
+  password: '0000'
   facets:
   - value: "studying" #1
     color: "red"

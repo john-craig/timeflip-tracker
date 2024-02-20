@@ -4,8 +4,13 @@ from ruamel.yaml import YAML
 
 yaml = YAML(typ="rt")
 
+DEFAULT_CONFIG_PATH = "/etc/timeflip-tracker/config.yaml"
+
 
 def validate_configuration(configuration):
+    if len(configuration["devices"]) < 1:
+        raise ValueError("No devices found in configuration file")
+
     # Main thing is that a device only has 12
     # sides, so... gotta check for that
     for device in configuration["devices"]:
