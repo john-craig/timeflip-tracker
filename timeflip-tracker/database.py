@@ -1,4 +1,5 @@
 import datetime
+import logging
 import os
 import sys
 
@@ -21,6 +22,9 @@ def connect_database():
 
     database_connection = mariadb.connect(
         host=db_host, port=db_port, user=db_user, password=db_pass, database=db_database
+    )
+    logging.info(
+        f"Connect to database with host {db_host}, port {db_port}, database {db_database}, user {db_user}, password *******"
     )
 
     database_cursor = database_connection.cursor()
@@ -61,6 +65,12 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
     cur_time = datetime.datetime.now()
     last_event = get_last_event()
 
+    logging.info(
+        f"Inserting New Event: {device_name} {mac_addr} {facet_num} {facet_val}"
+    )
+
+    logging.debug(f"Last Event: {last_event}")
+
     if last_event:
         last_time = last_event[1]
         elapsed = cur_time - last_time
@@ -82,7 +92,7 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
         )
     """
 
-    print(insert_statement)
+    logging.debug(f"Event insert statement:\n {insert_statement}")
 
     res = database_cursor.execute(insert_statement)
     database_connection.commit()

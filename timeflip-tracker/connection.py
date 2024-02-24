@@ -1,8 +1,9 @@
 import asyncio
+import logging
 import sys
 from typing import Any, Callable, Coroutine, List, Tuple
 
-from bleak import BleakClient, BleakError, BleakScanner
+from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
 from bleak.backends.device import BLEDevice
 from colors import color_to_tuple
 from database import insert_event
@@ -15,40 +16,9 @@ from pytimefliplib.async_client import (
 
 device_conf = None
 
-facet_mapping = [
-    "",
-    "studying",  # 1
-    "chores",  # 2
-    "writing",  # 3
-    "development",  # 4
-    "reading",  # 5
-    "streaming",  # 6
-    "exercise",  # 7
-    "administrivia",  # 8
-    "television",  # 9
-    "break",  # 10
-    "music",  # 11
-    "meeting",  # 12
-]
-
-weekday_colors = [
-    (77, 166, 255),
-    (255, 153, 102),
-    (0, 153, 0),
-    (204, 34, 0),
-    (25, 255, 255),
-    (42, 0, 128),
-    (255, 221, 51),
-]
-
 
 class RuntimeClientError(Exception):
     pass
-
-
-# async def set_facet_colors(client: AsyncClient, color):
-#     for i in range(0, 12):
-#         await client.set_color(i, color)
 
 
 async def find_timeflip():
@@ -62,7 +32,6 @@ async def find_timeflip():
 
     devices = await BleakScanner.discover()
     for d in devices:
-        print(d)
         try:
             async with BleakClient(d) as client:
                 try:  # Check if the device have a TimeFlip characteristic (here, the facet value)
@@ -77,7 +46,7 @@ async def find_timeflip():
     return devices_map["timeflip"]
 
 
-async def facet_notify_callback(arg1, event_data):
+async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
     facet_num = event_data[0]
     insert_event(
         device_conf["name"],
@@ -88,7 +57,7 @@ async def facet_notify_callback(arg1, event_data):
 
 
 def disconnect_callback(client: AsyncClient):
-    print("NEFAS!")
+    logger.warning(f"Disconnected from {client.address}")
 
 
 async def connect_and_run(
@@ -98,6 +67,7 @@ async def connect_and_run(
 ):
     global device_conf
     device_conf = device_config
+    mac_addr = device_config["mac_address"]
 
     # for now just always try to reconnect until we're killed
     while True:
@@ -106,15 +76,15 @@ async def connect_and_run(
                 device_config["mac_address"], disconnected_callback=disconnect_callback
             ) as client:
                 # setup
-                print("! Connected to {}".format(device_config["mac_address"]))
+                debug.info(f"Connected to {mac_addr}")
 
                 await client.setup(password=device_config["password"])
-                print("! Password communicated")
+                debug.info(f"Password communicated to {mac_addr}")
 
                 await actions_on_client(device_config, client)
 
         except (BleakError, TimeFlipRuntimeError, RuntimeClientError) as e:
-            print("communication error: {}".format(e), file=sys.stderr)
+            logging.error(f"Communication error connecting to {mac_addr}: {e}")
 
             # TODO: handle this
 
@@ -124,23 +94,36 @@ async def connect_and_run(
 async def actions_on_client(device_config, client: AsyncClient):
     await client.register_notify_facet_v3(facet_notify_callback)
 
-    # battery_level = await client.battery_level()
-    # Post the current facet on connect
-    # current_facet = await client.current_facet()
-    # post_facet(current_facet)
+    mac_addr = device_config["mac_address"]
+    logger.info(f"Connected to device {mac_addr}")
+
+    firmware_revision = await client.firmware_revision()
+    battery_level = await client.battery_level()
+    internal_device_name = await client.device_name()
+    logger.debug(
+        f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
+    )
 
     color_tuple_white = color_to_tuple("white")
     for i in range(0, 12):
+        color_tuple = None
+
         if i < len(device_config["facets"]):
             facet = device_config["facets"][i]
 
             if "color" in facet:
                 color_tuple = color_to_tuple(facet["color"])
-                await client.set_color(i, color_tuple)
             else:
-                await client.set_color(i, color_tuple_white)
+                color_tuple = color_tuple_white
         else:
-            await client.set_color(i, color_tuple_white)
+            color_tuple = color_tuple_white
+
+        await client.set_color(i, color_tuple)
+        logging.debug(f"Device {mac_addr} facet {i+1} set to color {color_tuple}")
+
+    # Post the current facet on connect
+    current_facet = await client.current_facet()
+    await facet_notify_callback(None, [current_facet])
 
     while True:
         await asyncio.sleep(60)
