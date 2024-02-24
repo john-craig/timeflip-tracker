@@ -12,53 +12,15 @@ from bleak import BleakClient, BleakError, BleakScanner
 from bleak.backends.device import BLEDevice
 from configuration import load_configuration
 from connection import *
-
-disconnect_sent = False
-
-current_day = None
-webhook_token = None
-webhook_url = None
-
-
-# Callbacks
-
-
-# def post_facet(facet):
-#     activity = "unknown"
-#     if facet == -1:
-#         activity = "disconnect"
-#     else:
-#         activity = facet_mapping[facet]
-
-#     requests.post(
-#         webhook_url,
-#         headers={
-#             "Authorization": "Token {}".format(webhook_token),
-#             "Content-Type": "application/json",
-#         },
-#         json={"side": facet, "activity": activity},
-#     )
-
-
-# async def event_callback(arg1, event_data):
-#     post_facet(event_data[0])
-
-
-# def get_current_day_of_week():
-#     # Get the current date
-#     current_date = datetime.now()
-
-#     # Get the day of the week as an integer (Monday is 0, Sunday is 6)
-#     day_of_week = current_date.weekday()
-
-#     return day_of_week
+from database import *
 
 
 def main():
+    database_cursor = connect_database()
+
     timeflip_config = load_configuration()
     device_config = timeflip_config["devices"][0]  # Only one supported
 
-    print(device_config)
     loop = asyncio.get_event_loop()
 
     try:

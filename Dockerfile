@@ -1,7 +1,17 @@
-FROM python:3.12-slim
+FROM python:3.10
 
-COPY timeflip-tracker /opt
+WORKDIR /app
 
-COPY requirements.txt /opt
+COPY timeflip-tracker/ /app/timeflip-tracker
 
-RUN pip install -r /opt/requirements.txt
+COPY requirements.txt /app
+
+COPY config.yaml /etc/timeflip-tracker/
+
+RUN pip install -r requirements.txt
+
+VOLUME /var/run/dbus/
+
+# VOLUME /etc/timeflip-tracker
+
+ENTRYPOINT ["python", "-u", "timeflip-tracker/main.py"]

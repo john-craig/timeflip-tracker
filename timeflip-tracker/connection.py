@@ -1,14 +1,19 @@
+import asyncio
 import sys
 from typing import Any, Callable, Coroutine, List, Tuple
 
 from bleak import BleakClient, BleakError, BleakScanner
 from bleak.backends.device import BLEDevice
+from colors import color_to_tuple
+from database import insert_event
 from pytimefliplib.async_client import (
     CHARACTERISTICS,
     DEFAULT_PASSWORD,
     AsyncClient,
     TimeFlipRuntimeError,
 )
+
+device_conf = None
 
 facet_mapping = [
     "",
@@ -41,9 +46,9 @@ class RuntimeClientError(Exception):
     pass
 
 
-async def set_facet_colors(client: AsyncClient, color):
-    for i in range(0, 12):
-        await client.set_color(i, color)
+# async def set_facet_colors(client: AsyncClient, color):
+#     for i in range(0, 12):
+#         await client.set_color(i, color)
 
 
 async def find_timeflip():
@@ -72,6 +77,16 @@ async def find_timeflip():
     return devices_map["timeflip"]
 
 
+async def facet_notify_callback(arg1, event_data):
+    facet_num = event_data[0]
+    insert_event(
+        device_conf["name"],
+        device_conf["mac_address"],
+        facet_num,
+        device_conf["facets"][facet_num]["value"],
+    )
+
+
 def disconnect_callback(client: AsyncClient):
     print("NEFAS!")
 
@@ -81,6 +96,9 @@ async def connect_and_run(
     actions_on_client: Callable[[AsyncClient], Coroutine],
     disconnect_callback,
 ):
+    global device_conf
+    device_conf = device_config
+
     # for now just always try to reconnect until we're killed
     while True:
         try:
@@ -104,21 +122,25 @@ async def connect_and_run(
 
 
 async def actions_on_client(device_config, client: AsyncClient):
-    # global current_day
-    # await client.register_notify_facet_v3(event_callback)
+    await client.register_notify_facet_v3(facet_notify_callback)
 
+    # battery_level = await client.battery_level()
     # Post the current facet on connect
-    current_facet = await client.current_facet()
+    # current_facet = await client.current_facet()
     # post_facet(current_facet)
 
-    current_day = get_current_day_of_week()
+    color_tuple_white = color_to_tuple("white")
+    for i in range(0, 12):
+        if i < len(device_config["facets"]):
+            facet = device_config["facets"][i]
 
-    await set_facet_colors(client, weekday_colors[current_day])
+            if "color" in facet:
+                color_tuple = color_to_tuple(facet["color"])
+                await client.set_color(i, color_tuple)
+            else:
+                await client.set_color(i, color_tuple_white)
+        else:
+            await client.set_color(i, color_tuple_white)
 
     while True:
         await asyncio.sleep(60)
-
-        if get_current_day_of_week() != current_day:
-            current_day = get_current_day_of_week()
-
-            await set_facet_colors(client, weekday_colors[current_day])
