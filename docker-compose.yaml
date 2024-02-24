@@ -8,13 +8,16 @@ services:
     container_name: 'timeflip-tracker'
     volumes:
     - /var/run/dbus/:/var/run/dbus/
-    - ./config/config.yaml:/etc/timeflip-tracker/config.yaml
+    - ${PWD}/config.yaml:/etc/timeflip-tracker/config.yaml
     environment:
-    - MARIADB_HOST=0.0.0.0
+    - MARIADB_HOST=192.168.1.32
     - MARIADB_PORT=3307
     - MARIADB_DATABASE=timeflip
     - MARIADB_USER=timeflip
     - MARIADB_PASSWORD=password
+    depends_on:
+    - database
+    restart: unless-stopped
   database:
     image: mariadb:latest
     ports:

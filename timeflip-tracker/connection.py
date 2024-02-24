@@ -52,7 +52,7 @@ async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
         device_conf["name"],
         device_conf["mac_address"],
         facet_num,
-        device_conf["facets"][facet_num]["value"],
+        device_conf["facets"][facet_num - 1]["value"],
     )
 
 
