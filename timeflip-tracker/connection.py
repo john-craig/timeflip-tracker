@@ -57,7 +57,7 @@ async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
 
 
 def disconnect_callback(client: AsyncClient):
-    logger.warning(f"Disconnected from {client.address}")
+    logging.warning(f"Disconnected from {client.address}")
 
 
 async def connect_and_run(
@@ -76,31 +76,31 @@ async def connect_and_run(
                 device_config["mac_address"], disconnected_callback=disconnect_callback
             ) as client:
                 # setup
-                debug.info(f"Connected to {mac_addr}")
+                logging.info(f"Connected to {mac_addr}")
 
                 await client.setup(password=device_config["password"])
-                debug.info(f"Password communicated to {mac_addr}")
+                logging.info(f"Password communicated to {mac_addr}")
 
                 await actions_on_client(device_config, client)
 
         except (BleakError, TimeFlipRuntimeError, RuntimeClientError) as e:
-            logging.error(f"Communication error connecting to {mac_addr}: {e}")
+            logging.error(f"Communication error connecting to {mac_addr}. {e}")
 
             # TODO: handle this
 
-        await asyncio.sleep(300)
+        await asyncio.sleep(30)
 
 
 async def actions_on_client(device_config, client: AsyncClient):
     await client.register_notify_facet_v3(facet_notify_callback)
 
     mac_addr = device_config["mac_address"]
-    logger.info(f"Connected to device {mac_addr}")
+    logging.info(f"Connected to device {mac_addr}")
 
     firmware_revision = await client.firmware_revision()
     battery_level = await client.battery_level()
     internal_device_name = await client.device_name()
-    logger.debug(
+    logging.debug(
         f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
     )
 

@@ -6,6 +6,7 @@ services:
     build:
       context: .
     container_name: 'timeflip-tracker'
+    privileged: true
     volumes:
     - /var/run/dbus/:/var/run/dbus/
     - ${PWD}/config.yaml:/etc/timeflip-tracker/config.yaml
@@ -15,6 +16,7 @@ services:
     - MARIADB_DATABASE=timeflip
     - MARIADB_USER=timeflip
     - MARIADB_PASSWORD=password
+    - LOG_LEVEL=INFO
     depends_on:
     - database
     restart: unless-stopped
