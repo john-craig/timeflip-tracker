@@ -51,10 +51,17 @@ def close_database():
 
 
 def get_last_event():
-    global database_cursor
-    database_cursor.execute(
-        "SELECT * FROM timeflip_events ORDER BY createdDate DESC LIMIT 1"
-    )
+    global database_cursor, database_connection
+    query_string = "SELECT * FROM timeflip_events ORDER BY createdDate DESC LIMIT 1"
+
+    try:
+        database_cursor.execute(query_string)
+    except mariadb.InterfaceError:
+        # Initiate a reconnection if we lost it
+        database_connection.reconnect()
+        database_cursor = database_connection.cursor()
+
+        database_cursor.execute(query_string)
     results = database_cursor.fetchall()
 
     return results[0] if len(results) == 1 else None
@@ -94,5 +101,13 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
 
     logging.debug(f"Event insert statement:\n {insert_statement}")
 
-    res = database_cursor.execute(insert_statement)
+    try:
+        database_cursor.execute(insert_statement)
+    except mariadb.InterfaceError:
+        # Initiate a reconnection if we lost it
+        database_connection.reconnect()
+        database_cursor = database_connection.cursor()
+
+        database_cursor.execute(insert_statement)
+
     database_connection.commit()
