@@ -1,12 +1,13 @@
 import asyncio
 import sys
-from logging import get_logger
 from typing import Any, Callable, Coroutine, List, Tuple
 
 from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
 from bleak.backends.device import BLEDevice
+from bluetooth_adapters import get_adapters
 from colors import color_to_tuple
 from database import insert_event
+from logger import get_logger
 from metrics import *
 from pytimefliplib.async_client import (
     CHARACTERISTICS,
@@ -82,6 +83,7 @@ async def connect_and_run(
     device_config,
     actions_on_client: Callable[[AsyncClient], Coroutine],
     disconnect_callback,
+    adapter_addr=None,
 ):
     global device_conf
     device_conf = device_config
@@ -89,11 +91,26 @@ async def connect_and_run(
 
     timeflip_logger = get_logger()
 
+    # Determine the adapter path, e.g.
+    #   /org/bluez/hciX
+    # based on the adapter address passed
+    # by the user.
+    adapter_path = None
+    if adapter_addr:
+        bluetooth_adapters = get_adapters()
+        await bluetooth_adapters.refresh()
+
+        for adapter in bluetooth_adapters.adapter:
+            if "address" in adapter and adapter["address"] == adapter_addr:
+                adapter_path = adapter
+
     # for now just always try to reconnect until we're killed
     while True:
         try:
             async with AsyncClient(
-                device_config["mac_address"], disconnected_callback=disconnect_callback
+                device_config["mac_address"],
+                disconnected_callback=disconnect_callback,
+                adapter=adapter_path,
             ) as client:
                 # setup
                 timeflip_logger.info(f"Connected to {mac_addr}")

@@ -1,9 +1,9 @@
 import datetime
 import os
 import sys
-from logging import get_logger
 
 import mariadb
+from logger import get_logger
 
 database_connection = None
 database_cursor = None
