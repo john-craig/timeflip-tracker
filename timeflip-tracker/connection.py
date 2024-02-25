@@ -1,6 +1,6 @@
 import asyncio
-import logging
 import sys
+from logging import get_logger
 from typing import Any, Callable, Coroutine, List, Tuple
 
 from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
@@ -52,7 +52,9 @@ async def timeflip_status(client):
     firmware_revision = await client.firmware_revision()
     battery_level = await client.battery_level()
     internal_device_name = await client.device_name()
-    logging.debug(
+
+    timeflip_logger = get_logger()
+    timeflip_logger.debug(
         f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
     )
     cut_timeflip_status_info(
@@ -71,7 +73,8 @@ async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
 
 
 def disconnect_callback(client: AsyncClient):
-    logging.warning(f"Disconnected from {client.address}")
+    timeflip_logger = get_logger()
+    timeflip_logger.warning(f"Disconnected from {client.address}")
     cut_timeflip_connection_info("disconnected", client.address)
 
 
@@ -84,6 +87,8 @@ async def connect_and_run(
     device_conf = device_config
     mac_addr = device_config["mac_address"]
 
+    timeflip_logger = get_logger()
+
     # for now just always try to reconnect until we're killed
     while True:
         try:
@@ -91,16 +96,16 @@ async def connect_and_run(
                 device_config["mac_address"], disconnected_callback=disconnect_callback
             ) as client:
                 # setup
-                logging.info(f"Connected to {mac_addr}")
+                timeflip_logger.info(f"Connected to {mac_addr}")
                 cut_timeflip_connection_info("connected", mac_addr)
 
                 await client.setup(password=device_config["password"])
-                logging.info(f"Password communicated to {mac_addr}")
+                timeflip_logger.info(f"Password communicated to {mac_addr}")
 
                 await actions_on_client(device_config, client)
 
         except (BleakError, TimeFlipRuntimeError, RuntimeClientError) as e:
-            logging.error(f"Communication error connecting to {mac_addr}. {e}")
+            timeflip_logger.error(f"Communication error connecting to {mac_addr}. {e}")
 
             # TODO: handle this
 
@@ -111,7 +116,8 @@ async def actions_on_client(device_config, client: AsyncClient):
     await client.register_notify_facet_v3(facet_notify_callback)
 
     mac_addr = device_config["mac_address"]
-    logging.info(f"Connected to device {mac_addr}")
+    timeflip_logger = get_logger()
+    timeflip_logger.info(f"Connected to device {mac_addr}")
 
     await timeflip_status()
 
@@ -130,7 +136,9 @@ async def actions_on_client(device_config, client: AsyncClient):
             color_tuple = color_tuple_white
 
         await client.set_color(i, color_tuple)
-        logging.debug(f"Device {mac_addr} facet {i+1} set to color {color_tuple}")
+        timeflip_logger.debug(
+            f"Device {mac_addr} facet {i+1} set to color {color_tuple}"
+        )
 
     # Post the current facet on connect
     current_facet = await client.current_facet()

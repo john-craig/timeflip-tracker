@@ -1,7 +1,7 @@
 import datetime
-import logging
 import os
 import sys
+from logging import get_logger
 
 import mariadb
 
@@ -23,7 +23,9 @@ def connect_database():
     database_connection = mariadb.connect(
         host=db_host, port=db_port, user=db_user, password=db_pass, database=db_database
     )
-    logging.info(
+
+    timeflip_logger = get_logger()
+    timeflip_logger.info(
         f"Connect to database with host {db_host}, port {db_port}, database {db_database}, user {db_user}, password *******"
     )
 
@@ -72,11 +74,12 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
     cur_time = datetime.datetime.now()
     last_event = get_last_event()
 
-    logging.info(
+    timeflip_logger = get_logger()
+    timeflip_logger.info(
         f"Inserting New Event: {device_name} {mac_addr} {facet_num} {facet_val}"
     )
 
-    logging.debug(f"Last Event: {last_event}")
+    timeflip_logger.debug(f"Last Event: {last_event}")
 
     if last_event:
         # If we have been given an event with the same device address, facet number, and facet value
@@ -109,7 +112,7 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
         )
     """
 
-    logging.debug(f"Event insert statement:\n {insert_statement}")
+    timeflip_logger.debug(f"Event insert statement:\n {insert_statement}")
 
     try:
         database_cursor.execute(insert_statement)

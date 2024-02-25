@@ -14,21 +14,13 @@ from bleak.backends.device import BLEDevice
 from configuration import load_configuration
 from connection import *
 from database import *
+from logger import *
 from prometheus_client import start_http_server
-
-LOG_LEVEL_LOOKUP = {"INFO": logging.INFO, "DEBUG": logging.DEBUG}
 
 
 def main():
-    env_log_level = os.getenv("LOG_LEVEL")
-    if env_log_level in LOG_LEVEL_LOOKUP:
-        log_level = LOG_LEVEL_LOOKUP[env_log_level]
-    else:
-        log_level = logging.ERROR
-
-    # Set up logging
-    logging.basicConfig()
-    logging.getLogger().setLevel(log_level)
+    create_logger()
+    timeflip_logger = get_logger()
 
     # Load configuration
     timeflip_config = load_configuration()
