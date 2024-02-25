@@ -42,7 +42,7 @@ def connect_database():
     )"""
     )
 
-    return database_cursor
+    return database_connection
 
 
 def close_database():
@@ -79,6 +79,16 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
     logging.debug(f"Last Event: {last_event}")
 
     if last_event:
+        # If we have been given an event with the same device address, facet number, and facet value
+        # as the preceding event, there is no reason to create a new entry, because nothing has changed
+        if (
+            last_event[2] == device_name
+            and last_event[3] == mac_addr
+            and last_event[4] == facet_num
+            and last_event[5] == facet_val
+        ):
+            return
+
         last_time = last_event[1]
         elapsed = cur_time - last_time
         duration = int(elapsed.total_seconds())

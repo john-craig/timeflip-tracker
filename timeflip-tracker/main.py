@@ -14,6 +14,7 @@ from bleak.backends.device import BLEDevice
 from configuration import load_configuration
 from connection import *
 from database import *
+from prometheus_client import start_http_server
 
 LOG_LEVEL_LOOKUP = {"INFO": logging.INFO, "DEBUG": logging.DEBUG}
 
@@ -25,13 +26,19 @@ def main():
     else:
         log_level = logging.ERROR
 
+    # Set up logging
     logging.basicConfig()
     logging.getLogger().setLevel(log_level)
 
-    database_cursor = connect_database()
-
+    # Load configuration
     timeflip_config = load_configuration()
     device_config = timeflip_config["devices"][0]  # Only one supported
+
+    # Connect to database
+    database_connection = connect_database()
+
+    # Start up the server to expose the metrics.
+    metrics_server = start_http_server(8000)
 
     loop = asyncio.get_event_loop()
 
@@ -49,10 +56,11 @@ def main():
                 return_exceptions=True  # means all tasks get a chance to finish
             )
         )
-
-        raise
     finally:
         loop.close()
+
+    close_database()
+    metrics_server.shutdown()
 
 
 if __name__ == "__main__":

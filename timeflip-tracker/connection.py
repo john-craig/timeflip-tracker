@@ -7,6 +7,7 @@ from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
 from bleak.backends.device import BLEDevice
 from colors import color_to_tuple
 from database import insert_event
+from metrics import *
 from pytimefliplib.async_client import (
     CHARACTERISTICS,
     DEFAULT_PASSWORD,
@@ -46,6 +47,19 @@ async def find_timeflip():
     return devices_map["timeflip"]
 
 
+async def timeflip_status(client):
+    mac_addr = client.address
+    firmware_revision = await client.firmware_revision()
+    battery_level = await client.battery_level()
+    internal_device_name = await client.device_name()
+    logging.debug(
+        f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
+    )
+    cut_timeflip_status_info(
+        mac_addr, firmware_revision, battery_level, internal_device_name
+    )
+
+
 async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
     facet_num = event_data[0]
     insert_event(
@@ -58,6 +72,7 @@ async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
 
 def disconnect_callback(client: AsyncClient):
     logging.warning(f"Disconnected from {client.address}")
+    cut_timeflip_connection_info("disconnected", client.address)
 
 
 async def connect_and_run(
@@ -77,6 +92,7 @@ async def connect_and_run(
             ) as client:
                 # setup
                 logging.info(f"Connected to {mac_addr}")
+                cut_timeflip_connection_info("connected", mac_addr)
 
                 await client.setup(password=device_config["password"])
                 logging.info(f"Password communicated to {mac_addr}")
@@ -97,12 +113,7 @@ async def actions_on_client(device_config, client: AsyncClient):
     mac_addr = device_config["mac_address"]
     logging.info(f"Connected to device {mac_addr}")
 
-    firmware_revision = await client.firmware_revision()
-    battery_level = await client.battery_level()
-    internal_device_name = await client.device_name()
-    logging.debug(
-        f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
-    )
+    await timeflip_status()
 
     color_tuple_white = color_to_tuple("white")
     for i in range(0, 12):
@@ -126,4 +137,5 @@ async def actions_on_client(device_config, client: AsyncClient):
     await facet_notify_callback(None, [current_facet])
 
     while True:
-        await asyncio.sleep(60)
+        await asyncio.sleep(600)
+        await timeflip_status()
