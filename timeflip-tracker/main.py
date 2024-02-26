@@ -31,7 +31,7 @@ def main():
     database_connection = connect_database()
 
     # Start up the server to expose the metrics.
-    metrics_server = start_http_server(8000)
+    metrics_server, _ = start_http_server(8000)
 
     loop = asyncio.get_event_loop()
 
@@ -55,10 +55,9 @@ def main():
             )
         )
     finally:
+        # close_database()
+        # metrics_server.shutdown()
         loop.close()
-
-    close_database()
-    metrics_server.shutdown()
 
 
 if __name__ == "__main__":

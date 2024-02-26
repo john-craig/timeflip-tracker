@@ -97,12 +97,20 @@ async def connect_and_run(
     # by the user.
     adapter_path = None
     if adapter_addr:
+        timeflip_logger.debug(f"Attempting to find path for adapter {adapter_addr}")
         bluetooth_adapters = get_adapters()
         await bluetooth_adapters.refresh()
 
-        for adapter in bluetooth_adapters.adapter:
-            if "address" in adapter and adapter["address"] == adapter_addr:
-                adapter_path = adapter
+        timeflip_logger.debug(f"Found adapters:\n{bluetooth_adapters.adapters}")
+
+        for adapter_key in bluetooth_adapters.adapters:
+            adapter_obj = bluetooth_adapters.adapters[adapter_key]
+
+            if "address" in adapter_obj and adapter_obj["address"] == adapter_addr:
+                adapter_path = adapter_key
+                timeflip_logger.debug(
+                    f"Matched path {adapter_path} for adapter {adapter_addr}"
+                )
 
     # for now just always try to reconnect until we're killed
     while True:
@@ -110,7 +118,7 @@ async def connect_and_run(
             async with AsyncClient(
                 device_config["mac_address"],
                 disconnected_callback=disconnect_callback,
-                adapter=adapter_path,
+                # adapter=adapter_path,
             ) as client:
                 # setup
                 timeflip_logger.info(f"Connected to {mac_addr}")
