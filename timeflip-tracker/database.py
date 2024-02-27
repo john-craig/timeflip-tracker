@@ -4,6 +4,7 @@ import sys
 
 import mariadb
 from logger import get_logger
+from metrics import cut_timeflip_facet_info
 
 database_connection = None
 database_cursor = None
@@ -87,6 +88,10 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
         duration = int(elapsed.total_seconds())
     else:
         duration = 0
+
+    cut_timeflip_facet_info(
+        cur_time.isoformat(), device_name, mac_addr, facet_num, facet_val
+    )
 
     insert_statement = f"""
         INSERT INTO timeflip_events

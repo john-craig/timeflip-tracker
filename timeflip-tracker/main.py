@@ -16,6 +16,7 @@ from configuration import load_configuration
 from connection import *
 from database import *
 from logger import *
+from prometheus_client import start_http_server
 
 
 async def main():
@@ -30,6 +31,9 @@ async def main():
 
     loop = asyncio.get_event_loop()
 
+    # Start up the server to expose the metrics.
+    metrics_server, _ = start_http_server(8000)
+
     def handler(signum, frame):
         timeflip_logger.warning("Got SIGINT/SIGTERM, shutting down...")
         all_tasks = asyncio.all_tasks(loop=loop)
@@ -43,6 +47,7 @@ async def main():
         )
 
         close_database()
+        metrics_server.shutdown()
         loop.close()
 
     signal.signal(signal.SIGINT, handler)

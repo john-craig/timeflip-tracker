@@ -1,3 +1,4 @@
+aiooui==0.1.5
 autopep8==1.5.7
 bleak==0.21.1
 bluetooth-adapters==0.18.0
@@ -12,6 +13,7 @@ idna==3.4
 mariadb==1.1.10
 mccabe==0.6.1
 packaging==23.2
+prometheus_client==0.20.0
 pycodestyle==2.7.0
 pyflakes==2.3.1
 python-dotenv==1.0.0
@@ -22,3 +24,4 @@ ruamel.yaml.clib==0.2.8
 toml==0.10.2
 typing_extensions==4.9.0
 urllib3==2.0.4
+usb-devices==0.4.5

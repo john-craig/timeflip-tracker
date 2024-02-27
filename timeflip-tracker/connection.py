@@ -8,6 +8,7 @@ from bluetooth_adapters import get_adapters
 from colors import color_to_tuple
 from database import insert_event
 from logger import get_logger
+from metrics import cut_timeflip_connection_info, cut_timeflip_status_info
 from pytimefliplib.async_client import (
     CHARACTERISTICS,
     DEFAULT_PASSWORD,
@@ -58,6 +59,10 @@ async def timeflip_status(client):
         f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
     )
 
+    cut_timeflip_status_info(
+        mac_addr, firmware_revision, battery_level, internal_device_name
+    )
+
 
 async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
     facet_num = event_data[0]
@@ -72,6 +77,7 @@ async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
 def disconnect_callback(client: AsyncClient):
     timeflip_logger = get_logger()
     timeflip_logger.warning(f"Disconnected from {client.address}")
+    cut_timeflip_connection_info("disconnected", client.address)
 
 
 async def connect_and_run(
@@ -111,6 +117,7 @@ async def connect_and_run(
             ) as client:
                 # setup
                 timeflip_logger.info(f"Connected to {mac_addr}")
+                cut_timeflip_connection_info("connected", client.address)
 
                 await client.setup(password=device_config["password"])
                 timeflip_logger.info(f"Password communicated to {mac_addr}")
@@ -130,7 +137,7 @@ async def actions_on_client(device_config, client: AsyncClient):
     timeflip_logger = get_logger()
     timeflip_logger.info(f"Connected to device {mac_addr}")
 
-    await timeflip_status()
+    await timeflip_status(client)
 
     color_tuple_white = color_to_tuple("white")
     for i in range(0, 12):
