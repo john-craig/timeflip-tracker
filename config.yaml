@@ -1,3 +1,4 @@
+adapter: "00:1A:7D:DA:71:07"
 devices:
 - name: My Device
   mac_address: "D0:A1:FC:9C:B2:46"

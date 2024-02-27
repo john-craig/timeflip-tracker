@@ -1,5 +1,6 @@
 autopep8==1.5.7
 bleak==0.21.1
+bluetooth-adapters==0.18.0
 certifi==2023.5.7
 charset-normalizer==3.2.0
 colour==0.1.5

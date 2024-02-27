@@ -5,6 +5,7 @@ from typing import Any, Callable, Coroutine, List, Tuple
 
 from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
 from bleak.backends.device import BLEDevice
+from bluetooth_adapters import get_adapters
 from colors import color_to_tuple
 from database import insert_event
 from pytimefliplib.async_client import (
@@ -64,16 +65,36 @@ async def connect_and_run(
     device_config,
     actions_on_client: Callable[[AsyncClient], Coroutine],
     disconnect_callback,
+    adapter_addr=None,
 ):
     global device_conf
     device_conf = device_config
     mac_addr = device_config["mac_address"]
 
+    adapter_path = None
+    if adapter_addr:
+        # timeflip_logger.debug(f"Attempting to find path for adapter {adapter_addr}")
+        bluetooth_adapters = get_adapters()
+        await bluetooth_adapters.refresh()
+
+        # timeflip_logger.debug(f"Found adapters:\n{bluetooth_adapters.adapters}")
+
+        for adapter_key in bluetooth_adapters.adapters:
+            adapter_obj = bluetooth_adapters.adapters[adapter_key]
+
+            if "address" in adapter_obj and adapter_obj["address"] == adapter_addr:
+                adapter_path = adapter_key
+                # timeflip_logger.debug(
+                #     f"Matched path {adapter_path} for adapter {adapter_addr}"
+                # )
+
     # for now just always try to reconnect until we're killed
     while True:
         try:
             async with AsyncClient(
-                device_config["mac_address"], disconnected_callback=disconnect_callback
+                device_config["mac_address"],
+                disconnected_callback=disconnect_callback,
+                adapter=adapter_path,
             ) as client:
                 # setup
                 logging.info(f"Connected to {mac_addr}")

@@ -32,12 +32,18 @@ def main():
 
     timeflip_config = load_configuration()
     device_config = timeflip_config["devices"][0]  # Only one supported
+    adapter_addr = timeflip_config["adapter"] if "adapter" in timeflip_config else None
 
     loop = asyncio.get_event_loop()
 
     try:
         loop.run_until_complete(
-            connect_and_run(device_config, actions_on_client, disconnect_callback)
+            connect_and_run(
+                device_config,
+                actions_on_client,
+                disconnect_callback,
+                adapter_addr=adapter_addr,
+            )
         )
     except (BaseException, KeyboardInterrupt):
         all_tasks = asyncio.all_tasks(loop=loop)
