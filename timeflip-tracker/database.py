@@ -1,9 +1,9 @@
 import datetime
+import logging
 import os
 import sys
 
 import mariadb
-from logger import get_logger
 
 database_connection = None
 database_cursor = None
@@ -23,9 +23,7 @@ def connect_database():
     database_connection = mariadb.connect(
         host=db_host, port=db_port, user=db_user, password=db_pass, database=db_database
     )
-
-    timeflip_logger = get_logger()
-    timeflip_logger.info(
+    logging.info(
         f"Connect to database with host {db_host}, port {db_port}, database {db_database}, user {db_user}, password *******"
     )
 
@@ -44,7 +42,7 @@ def connect_database():
     )"""
     )
 
-    return database_connection
+    return database_cursor
 
 
 def close_database():
@@ -74,24 +72,13 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
     cur_time = datetime.datetime.now()
     last_event = get_last_event()
 
-    timeflip_logger = get_logger()
-    timeflip_logger.info(
+    logging.info(
         f"Inserting New Event: {device_name} {mac_addr} {facet_num} {facet_val}"
     )
 
-    timeflip_logger.debug(f"Last Event: {last_event}")
+    logging.debug(f"Last Event: {last_event}")
 
     if last_event:
-        # If we have been given an event with the same device address, facet number, and facet value
-        # as the preceding event, there is no reason to create a new entry, because nothing has changed
-        if (
-            last_event[2] == device_name
-            and last_event[3] == mac_addr
-            and last_event[4] == facet_num
-            and last_event[5] == facet_val
-        ):
-            return
-
         last_time = last_event[1]
         elapsed = cur_time - last_time
         duration = int(elapsed.total_seconds())
@@ -112,7 +99,7 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
         )
     """
 
-    timeflip_logger.debug(f"Event insert statement:\n {insert_statement}")
+    logging.debug(f"Event insert statement:\n {insert_statement}")
 
     try:
         database_cursor.execute(insert_statement)

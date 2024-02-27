@@ -16,9 +16,7 @@ services:
     - MARIADB_DATABASE=timeflip
     - MARIADB_USER=timeflip
     - MARIADB_PASSWORD=password
-    - LOG_LEVEL=DEBUG
-    ports:
-    - 8001:8000
+    - LOG_LEVEL=INFO
     depends_on:
     - database
     restart: unless-stopped

@@ -1,7 +1,5 @@
-aiooui==0.1.5
 autopep8==1.5.7
 bleak==0.21.1
-bluetooth-adapters==0.18.0
 certifi==2023.5.7
 charset-normalizer==3.2.0
 colour==0.1.5
@@ -13,15 +11,13 @@ idna==3.4
 mariadb==1.1.10
 mccabe==0.6.1
 packaging==23.2
-prometheus_client==0.20.0
 pycodestyle==2.7.0
 pyflakes==2.3.1
 python-dotenv==1.0.0
-pytimefliplib @ git+https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git@269731718d342c4fa0a0150a8c30284cfe77aa0b
+pytimefliplib @ git+https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git@c014f0371d2d10a822e2ebf167b8600f4d94c121
 requests==2.31.0
 ruamel.yaml==0.18.5
 ruamel.yaml.clib==0.2.8
 toml==0.10.2
 typing_extensions==4.9.0
 urllib3==2.0.4
-usb-devices==0.4.5

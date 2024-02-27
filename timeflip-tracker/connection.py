@@ -1,14 +1,12 @@
 import asyncio
+import logging
 import sys
 from typing import Any, Callable, Coroutine, List, Tuple
 
 from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
 from bleak.backends.device import BLEDevice
-from bluetooth_adapters import get_adapters
 from colors import color_to_tuple
 from database import insert_event
-from logger import get_logger
-from metrics import *
 from pytimefliplib.async_client import (
     CHARACTERISTICS,
     DEFAULT_PASSWORD,
@@ -48,21 +46,6 @@ async def find_timeflip():
     return devices_map["timeflip"]
 
 
-async def timeflip_status(client):
-    mac_addr = client.address
-    firmware_revision = await client.firmware_revision()
-    battery_level = await client.battery_level()
-    internal_device_name = await client.device_name()
-
-    timeflip_logger = get_logger()
-    timeflip_logger.debug(
-        f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
-    )
-    cut_timeflip_status_info(
-        mac_addr, firmware_revision, battery_level, internal_device_name
-    )
-
-
 async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
     facet_num = event_data[0]
     insert_event(
@@ -74,63 +57,34 @@ async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
 
 
 def disconnect_callback(client: AsyncClient):
-    timeflip_logger = get_logger()
-    timeflip_logger.warning(f"Disconnected from {client.address}")
-    cut_timeflip_connection_info("disconnected", client.address)
+    logging.warning(f"Disconnected from {client.address}")
 
 
 async def connect_and_run(
     device_config,
     actions_on_client: Callable[[AsyncClient], Coroutine],
     disconnect_callback,
-    adapter_addr=None,
 ):
     global device_conf
     device_conf = device_config
     mac_addr = device_config["mac_address"]
 
-    timeflip_logger = get_logger()
-
-    # Determine the adapter path, e.g.
-    #   /org/bluez/hciX
-    # based on the adapter address passed
-    # by the user.
-    adapter_path = None
-    if adapter_addr:
-        timeflip_logger.debug(f"Attempting to find path for adapter {adapter_addr}")
-        bluetooth_adapters = get_adapters()
-        await bluetooth_adapters.refresh()
-
-        timeflip_logger.debug(f"Found adapters:\n{bluetooth_adapters.adapters}")
-
-        for adapter_key in bluetooth_adapters.adapters:
-            adapter_obj = bluetooth_adapters.adapters[adapter_key]
-
-            if "address" in adapter_obj and adapter_obj["address"] == adapter_addr:
-                adapter_path = adapter_key
-                timeflip_logger.debug(
-                    f"Matched path {adapter_path} for adapter {adapter_addr}"
-                )
-
     # for now just always try to reconnect until we're killed
     while True:
         try:
             async with AsyncClient(
-                device_config["mac_address"],
-                disconnected_callback=disconnect_callback,
-                # adapter=adapter_path,
+                device_config["mac_address"], disconnected_callback=disconnect_callback
             ) as client:
                 # setup
-                timeflip_logger.info(f"Connected to {mac_addr}")
-                cut_timeflip_connection_info("connected", mac_addr)
+                logging.info(f"Connected to {mac_addr}")
 
                 await client.setup(password=device_config["password"])
-                timeflip_logger.info(f"Password communicated to {mac_addr}")
+                logging.info(f"Password communicated to {mac_addr}")
 
                 await actions_on_client(device_config, client)
 
         except (BleakError, TimeFlipRuntimeError, RuntimeClientError) as e:
-            timeflip_logger.error(f"Communication error connecting to {mac_addr}. {e}")
+            logging.error(f"Communication error connecting to {mac_addr}. {e}")
 
             # TODO: handle this
 
@@ -141,10 +95,14 @@ async def actions_on_client(device_config, client: AsyncClient):
     await client.register_notify_facet_v3(facet_notify_callback)
 
     mac_addr = device_config["mac_address"]
-    timeflip_logger = get_logger()
-    timeflip_logger.info(f"Connected to device {mac_addr}")
+    logging.info(f"Connected to device {mac_addr}")
 
-    await timeflip_status()
+    firmware_revision = await client.firmware_revision()
+    battery_level = await client.battery_level()
+    internal_device_name = await client.device_name()
+    logging.debug(
+        f"Device {mac_addr} firmware revision {firmware_revision}, battery level {battery_level}, device_name {internal_device_name}"
+    )
 
     color_tuple_white = color_to_tuple("white")
     for i in range(0, 12):
@@ -161,14 +119,11 @@ async def actions_on_client(device_config, client: AsyncClient):
             color_tuple = color_tuple_white
 
         await client.set_color(i, color_tuple)
-        timeflip_logger.debug(
-            f"Device {mac_addr} facet {i+1} set to color {color_tuple}"
-        )
+        logging.debug(f"Device {mac_addr} facet {i+1} set to color {color_tuple}")
 
     # Post the current facet on connect
     current_facet = await client.current_facet()
     await facet_notify_callback(None, [current_facet])
 
     while True:
-        await asyncio.sleep(600)
-        await timeflip_status()
+        await asyncio.sleep(60)

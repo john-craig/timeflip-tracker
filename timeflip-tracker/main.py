@@ -14,35 +14,30 @@ from bleak.backends.device import BLEDevice
 from configuration import load_configuration
 from connection import *
 from database import *
-from logger import *
-from prometheus_client import start_http_server
+
+LOG_LEVEL_LOOKUP = {"INFO": logging.INFO, "DEBUG": logging.DEBUG}
 
 
 def main():
-    create_logger()
-    timeflip_logger = get_logger()
+    env_log_level = os.getenv("LOG_LEVEL")
+    if env_log_level in LOG_LEVEL_LOOKUP:
+        log_level = LOG_LEVEL_LOOKUP[env_log_level]
+    else:
+        log_level = logging.ERROR
 
-    # Load configuration
+    logging.basicConfig()
+    logging.getLogger().setLevel(log_level)
+
+    database_cursor = connect_database()
+
     timeflip_config = load_configuration()
     device_config = timeflip_config["devices"][0]  # Only one supported
-    adapter_addr = timeflip_config["adapter"] if "adapter" in timeflip_config else None
-
-    # Connect to database
-    database_connection = connect_database()
-
-    # Start up the server to expose the metrics.
-    metrics_server, _ = start_http_server(8000)
 
     loop = asyncio.get_event_loop()
 
     try:
         loop.run_until_complete(
-            connect_and_run(
-                device_config,
-                actions_on_client,
-                disconnect_callback,
-                adapter_addr=adapter_addr,
-            )
+            connect_and_run(device_config, actions_on_client, disconnect_callback)
         )
     except (BaseException, KeyboardInterrupt):
         all_tasks = asyncio.all_tasks(loop=loop)
@@ -54,9 +49,9 @@ def main():
                 return_exceptions=True  # means all tasks get a chance to finish
             )
         )
+
+        raise
     finally:
-        # close_database()
-        # metrics_server.shutdown()
         loop.close()
 
 
