@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import os
+import signal
 import sys
 import threading
 from datetime import datetime, timedelta
@@ -18,7 +19,7 @@ from database import *
 LOG_LEVEL_LOOKUP = {"INFO": logging.INFO, "DEBUG": logging.DEBUG}
 
 
-def main():
+async def main():
     env_log_level = os.getenv("LOG_LEVEL")
     if env_log_level in LOG_LEVEL_LOOKUP:
         log_level = LOG_LEVEL_LOOKUP[env_log_level]
@@ -36,16 +37,7 @@ def main():
 
     loop = asyncio.get_event_loop()
 
-    try:
-        loop.run_until_complete(
-            connect_and_run(
-                device_config,
-                actions_on_client,
-                disconnect_callback,
-                adapter_addr=adapter_addr,
-            )
-        )
-    except (BaseException, KeyboardInterrupt):
+    def handler(signum, frame):
         all_tasks = asyncio.all_tasks(loop=loop)
         for task in all_tasks:
             task.cancel()
@@ -56,10 +48,21 @@ def main():
             )
         )
 
-        raise
-    finally:
+        close_database()
         loop.close()
+
+    signal.signal(signal.SIGINT, handler)
+    signal.signal(signal.SIGTERM, handler)
+
+    await asyncio.gather(
+        connect_and_run(
+            device_config,
+            actions_on_client,
+            disconnect_callback,
+            adapter_addr=adapter_addr,
+        )
+    )
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
