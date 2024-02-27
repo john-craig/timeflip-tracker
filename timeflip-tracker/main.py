@@ -54,14 +54,16 @@ async def main():
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
 
-    await asyncio.gather(
-        connect_and_run(
-            device_config,
-            actions_on_client,
-            disconnect_callback,
-            adapter_addr=adapter_addr,
+    device_coroutines = list(
+        map(
+            lambda device_config: connect_and_run(
+                device_config, adapter_addr=adapter_addr
+            ),
+            timeflip_config["devices"],
         )
     )
+
+    await asyncio.gather(*device_coroutines)
 
 
 if __name__ == "__main__":

@@ -63,8 +63,6 @@ def disconnect_callback(client: AsyncClient):
 
 async def connect_and_run(
     device_config,
-    actions_on_client: Callable[[AsyncClient], Coroutine],
-    disconnect_callback,
     adapter_addr=None,
 ):
     global device_conf
