@@ -15,19 +15,12 @@ from bleak.backends.device import BLEDevice
 from configuration import load_configuration
 from connection import *
 from database import *
-
-LOG_LEVEL_LOOKUP = {"INFO": logging.INFO, "DEBUG": logging.DEBUG}
+from logger import *
 
 
 async def main():
-    env_log_level = os.getenv("LOG_LEVEL")
-    if env_log_level in LOG_LEVEL_LOOKUP:
-        log_level = LOG_LEVEL_LOOKUP[env_log_level]
-    else:
-        log_level = logging.ERROR
-
-    logging.basicConfig()
-    logging.getLogger().setLevel(log_level)
+    create_logger()
+    timeflip_logger = get_logger()
 
     database_cursor = connect_database()
 
@@ -38,6 +31,7 @@ async def main():
     loop = asyncio.get_event_loop()
 
     def handler(signum, frame):
+        timeflip_logger.warning("Got SIGINT/SIGTERM, shutting down...")
         all_tasks = asyncio.all_tasks(loop=loop)
         for task in all_tasks:
             task.cancel()
