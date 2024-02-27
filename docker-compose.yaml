@@ -16,7 +16,7 @@ services:
     - MARIADB_DATABASE=timeflip
     - MARIADB_USER=timeflip
     - MARIADB_PASSWORD=password
-    - LOG_LEVEL=INFO
+    - LOG_LEVEL=DEBUG
     depends_on:
     - database
     restart: unless-stopped
