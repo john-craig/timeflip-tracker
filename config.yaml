@@ -3,6 +3,7 @@ devices:
 - name: My Device
   mac_address: "D0:A1:FC:9C:B2:46"
   password: '0000'
+  default_color: "disco"
   facets:
   - value: "studying" #1
     color: "red"

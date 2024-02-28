@@ -5,7 +5,7 @@ from typing import Any, Callable, Coroutine, List, Tuple
 from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
 from bleak.backends.device import BLEDevice
 from bluetooth_adapters import get_adapters
-from colors import color_to_tuple
+from colors import color_to_tuple, random_color_tuple
 from database import insert_event
 from logger import get_logger
 from metrics import cut_timeflip_connection_info, cut_timeflip_status_info
@@ -15,8 +15,6 @@ from pytimefliplib.async_client import (
     AsyncClient,
     TimeFlipRuntimeError,
 )
-
-device_conf = None
 
 
 class RuntimeClientError(Exception):
@@ -64,16 +62,6 @@ async def timeflip_status(client):
     )
 
 
-async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
-    facet_num = event_data[0]
-    insert_event(
-        device_conf["name"],
-        device_conf["mac_address"],
-        facet_num,
-        device_conf["facets"][facet_num - 1]["value"],
-    )
-
-
 def disconnect_callback(client: AsyncClient):
     timeflip_logger = get_logger()
     timeflip_logger.warning(f"Disconnected from {client.address}")
@@ -84,8 +72,6 @@ async def connect_and_run(
     device_config,
     adapter_addr=None,
 ):
-    global device_conf
-    device_conf = device_config
     mac_addr = device_config["mac_address"]
 
     timeflip_logger = get_logger()
@@ -131,32 +117,50 @@ async def connect_and_run(
 
 
 async def actions_on_client(device_config, client: AsyncClient):
-    await client.register_notify_facet_v3(facet_notify_callback)
-
     mac_addr = device_config["mac_address"]
     timeflip_logger = get_logger()
     timeflip_logger.info(f"Connected to device {mac_addr}")
 
     await timeflip_status(client)
 
-    color_tuple_white = color_to_tuple("white")
+    disco_colors = (
+        "default_color" in device_config and device_config["default_color"] == "disco"
+    )
+    timeflip_logger.debug(f"Disco colors for device {mac_addr}: {disco_colors}")
+    default_color_tuple = (
+        color_to_tuple("white")
+        if "default_color" not in device_config or disco_colors
+        else color_to_tuple(device_config["default_color"])
+    )
+
     for i in range(0, 12):
-        color_tuple = None
+        color_tuple = default_color_tuple if not disco_colors else random_color_tuple()
 
         if i < len(device_config["facets"]):
             facet = device_config["facets"][i]
 
             if "color" in facet:
                 color_tuple = color_to_tuple(facet["color"])
-            else:
-                color_tuple = color_tuple_white
-        else:
-            color_tuple = color_tuple_white
+
+            facet["color_tuple"] = color_tuple
+            device_config["facets"][i] = facet
 
         await client.set_color(i, color_tuple)
         timeflip_logger.debug(
             f"Device {mac_addr} facet {i+1} set to color {color_tuple}"
         )
+
+    async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
+        facet_num = event_data[0]
+        insert_event(
+            device_config["name"],
+            device_config["mac_address"],
+            facet_num,
+            device_config["facets"][facet_num - 1]["value"],
+            device_config["facets"][facet_num - 1]["color_tuple"],
+        )
+
+    await client.register_notify_facet_v3(facet_notify_callback)
 
     # Post the current facet on connect
     current_facet = await client.current_facet()

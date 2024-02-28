@@ -41,6 +41,9 @@ def connect_database():
         macAddr CHAR(17),
         facetNum TINYINT,
         facetVal VARCHAR(255),
+        facetRed TINYINT UNSIGNED,
+        facetGreen TINYINT UNSIGNED ,
+        facetBlue TINYINT UNSIGNED ,
         startTime DATETIME DEFAULT CURRENT_TIMESTAMP,
         endTime DATETIME DEFAULT 0,
         duration BIGINT AS (IF(endTime <> 0,
@@ -122,7 +125,7 @@ def update_event_end(event_id, end_time):
         database_cursor.execute(update_statement)
 
 
-def insert_event(device_name, mac_addr, facet_num, facet_val):
+def insert_event(device_name, mac_addr, facet_num, facet_val, facet_color):
     global database_connection, database_cursor
     cur_time = datetime.datetime.now()
     prev_event = get_prev_event()
@@ -156,12 +159,16 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
     insert_statement = f"""
         INSERT INTO timeflip_events
             (deviceName, macAddr,
-            facetNum, facetVal)
+            facetNum, facetVal,
+            facetRed, facetGreen, facetBlue)
         VALUES (
             '{device_name}',
             '{mac_addr}',
             {facet_num},
-            '{facet_val}'
+            '{facet_val}',
+            {facet_color[0]},
+            {facet_color[1]},
+            {facet_color[2]}
         )
     """
 
