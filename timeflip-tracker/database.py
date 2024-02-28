@@ -44,8 +44,8 @@ def connect_database():
         startTime DATETIME DEFAULT CURRENT_TIMESTAMP,
         endTime DATETIME DEFAULT 0,
         duration BIGINT AS (IF(endTime <> 0,
-            TIMESTAMPDIFF(SECOND, endTime, startTime),
-            TIMESTAMPDIFF(SECOND, CURRENT_TIMESTAMP, startTime)))
+            TIMESTAMPDIFF(SECOND, startTime, endTime),
+            TIMESTAMPDIFF(SECOND, startTime, CURRENT_TIMESTAMP)))
         VIRTUAL,
         PRIMARY KEY (eventId)
     )"""
@@ -64,6 +64,23 @@ def connect_database():
 def close_database():
     global database_connection
     database_connection.close()
+
+
+def get_all_events():
+    global database_cursor, database_connection
+    query_string = "SELECT * FROM timeflip_events"
+
+    try:
+        database_cursor.execute(query_string)
+    except mariadb.InterfaceError:
+        # Initiate a reconnection if we lost it
+        database_connection.reconnect()
+        database_cursor = database_connection.cursor()
+
+        database_cursor.execute(query_string)
+
+    timeflip_logger = get_logger()
+    timeflip_logger.debug(f"Database Dump:\n {database_cursor.fetchall()}")
 
 
 def get_prev_event():
@@ -118,6 +135,17 @@ def insert_event(device_name, mac_addr, facet_num, facet_val):
     timeflip_logger.debug(f"Last Event: {prev_event}")
 
     if prev_event:
+        if (
+            prev_event[3] == device_name
+            and prev_event[4] == mac_addr
+            and prev_event[5] == facet_num
+            and prev_event[6] == facet_val
+        ):
+            timeflip_logger.info(
+                "Even has same activity as previous event; not inserting"
+            )
+            return
+
         prev_id = prev_event[0]
         update_event_end(prev_id, cur_time.isoformat())
 

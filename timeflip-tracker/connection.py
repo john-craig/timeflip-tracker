@@ -164,4 +164,4 @@ async def actions_on_client(device_config, client: AsyncClient):
 
     while True:
         await asyncio.sleep(600)
-        await timeflip_status()
+        await timeflip_status(client)
