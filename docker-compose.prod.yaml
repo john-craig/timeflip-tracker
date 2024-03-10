@@ -1,12 +1,9 @@
 version: '3.4'
 
 services:
-# May also need 'Privileged' here
   time-tracker:
-    build:
-      context: .
+    image: TBD
     container_name: 'timeflip-tracker'
-    privileged: true
     volumes:
     - /var/run/dbus/:/var/run/dbus/
     - ${PWD}/config.yaml:/etc/timeflip-tracker/config.yaml
@@ -24,6 +21,8 @@ services:
     image: mariadb:latest
     ports:
       - 3307:3306
+    volumes:
+    - ${PWD}/mysql:/var/lib/mysql:Z
     environment:
       - MARIADB_DATABASE=timeflip
       - MARIADB_USER=timeflip
