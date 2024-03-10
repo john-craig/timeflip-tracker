@@ -42,3 +42,9 @@ Currently there is not a way to specify the facet number manually, so if you wan
 
 #### Color Parsing
 Timeflip Tracker uses the [colour](https://pypi.org/project/colour/) library to parse colors specified in its configuration file. Per this library, it supports "RBG, HSL, 6-digit hex, 3-digit hex" as ways to specify colors, as well as [W3C color naming](https://www.w3.org/TR/css-color-3/#svg-color) for semantic colors.
+
+## Usage
+The intended use-case for this project is to collect activity data from a Timeflip device and store it in a database. From the database, this information may be queried by other applications, such as Grafana (for which there is an example dashboard here). Currently, this project does not support its own UI for displaying Timeflip activity data, nor are there currently any plans to add such a feature, although pull requests are open.
+
+
+If the Timeflip device is set onto a facet which is not defined in the configuration, the created event as an activity of "unassigned" and a color of white.

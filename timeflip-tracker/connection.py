@@ -152,13 +152,24 @@ async def actions_on_client(device_config, client: AsyncClient):
 
     async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
         facet_num = event_data[0]
-        insert_event(
-            device_config["name"],
-            device_config["mac_address"],
-            facet_num,
-            device_config["facets"][facet_num - 1]["value"],
-            device_config["facets"][facet_num - 1]["color_tuple"],
-        )
+
+        if facet_num >= len(device_config["facets"]):
+            # Set to a value that was not defined
+            insert_event(
+                device_config["name"],
+                device_config["mac_address"],
+                facet_num,
+                "unassigned",
+                color_to_tuple("white"),
+            )
+        else:
+            insert_event(
+                device_config["name"],
+                device_config["mac_address"],
+                facet_num,
+                device_config["facets"][facet_num - 1]["value"],
+                device_config["facets"][facet_num - 1]["color_tuple"],
+            )
 
     await client.register_notify_facet_v3(facet_notify_callback)
 
