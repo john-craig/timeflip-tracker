@@ -17,7 +17,7 @@ prometheus_client==0.20.0
 pycodestyle==2.7.0
 pyflakes==2.3.1
 python-dotenv==1.0.0
-pytimefliplib @ git+https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git@dabe0678df6d0b4b0759ec2a2ad70616dcc2bed9
+pytimefliplib @ git+https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git@500eb35bced583fdf5429fd01aa6652ba1ca5ced
 requests==2.31.0
 ruamel.yaml==0.18.5
 ruamel.yaml.clib==0.2.8
