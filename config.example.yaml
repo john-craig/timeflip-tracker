@@ -4,6 +4,10 @@ devices:
   mac_address: "00:00:00:00:00:00"
   password: '0000'
   default_color: "disco"    # Optional, defaults to white
+  actions: # Optional, invoked in addition to database
+    on_facet_change: ""
+    on_connect: ""
+    on_disconnect: ""
   facets:
   - value: "studying"       #1
     color: "red"

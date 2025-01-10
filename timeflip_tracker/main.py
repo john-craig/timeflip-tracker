@@ -12,10 +12,10 @@ import pytimefliplib
 import requests
 from bleak import BleakClient, BleakError, BleakScanner
 from bleak.backends.device import BLEDevice
-from configuration import load_configuration
-from connection import *
-from database import *
-from logger import *
+from timeflip_tracker.configuration import load_configuration
+from timeflip_tracker.connection import *
+from timeflip_tracker.database import *
+from timeflip_tracker.logger import *
 from prometheus_client import start_http_server
 
 
@@ -26,7 +26,6 @@ async def main():
     database_cursor = connect_database()
 
     timeflip_config = load_configuration()
-    device_config = timeflip_config["devices"][0]  # Only one supported
     adapter_addr = timeflip_config["adapter"] if "adapter" in timeflip_config else None
 
     loop = asyncio.get_event_loop()
@@ -65,5 +64,8 @@ async def main():
     await asyncio.gather(*device_coroutines)
 
 
-if __name__ == "__main__":
+def run_main():
     asyncio.run(main())
+
+if __name__ == "__main__":
+    run_main()

@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["timeflip_tracker"]
+
+[project]
+name = "timeflip_tracker"
+version = "0.0.0"
+dependencies = [
+    "aiooui",
+    "autopep8",
+    "bleak",
+    "bluetooth-adapters",
+    "certifi",
+    "charset-normalizer",
+    "colour",
+    "dbus-fast",
+    "dbus-next",
+    "flake8",
+    "flake8-quotes",
+    "idna",
+    "mariadb",
+    "mccabe",
+    "packaging",
+    "prometheus_client",
+    "pycodestyle",
+    "pyflakes",
+    "python-dotenv",
+    "pytimefliplib @ git+https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git@500eb35bced583fdf5429fd01aa6652ba1ca5ced",
+    "requests",
+    "ruamel.yaml",
+    "ruamel.yaml.clib",
+    "toml",
+    "typing_extensions",
+    "urllib3",
+    "usb-devices"
+]
+requires-python = ">=3.8"
+
+[project.scripts]
+timeflip-tracker = "timeflip_tracker:run_main"
+

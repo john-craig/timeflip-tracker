@@ -5,10 +5,11 @@ from typing import Any, Callable, Coroutine, List, Tuple
 from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
 from bleak.backends.device import BLEDevice
 from bluetooth_adapters import get_adapters
-from colors import color_to_tuple, random_color_tuple
-from database import insert_event
-from logger import get_logger
-from metrics import cut_timeflip_connection_info, cut_timeflip_status_info
+from timeflip_tracker.colors import color_to_tuple, random_color_tuple
+from timeflip_tracker.database import insert_event
+from timeflip_tracker.logger import get_logger
+from timeflip_tracker.actions import invoke_hook
+from timeflip_tracker.metrics import cut_timeflip_connection_info, cut_timeflip_status_info
 from pytimefliplib.async_client import (
     CHARACTERISTICS,
     DEFAULT_PASSWORD,
@@ -23,7 +24,6 @@ class RuntimeClientError(Exception):
 
 async def find_timeflip():
     """Adapted from Bleak documentation (https://pypi.org/project/bleak/) for the discovery of new devices."""
-
     devices_map: Dict[str, List[BLEDevice]] = {
         "connection_issue": [],
         "not_timeflip": [],
@@ -45,7 +45,6 @@ async def find_timeflip():
 
     return devices_map["timeflip"]
 
-
 async def timeflip_status(client):
     mac_addr = client.address
     firmware_revision = await client.firmware_revision()
@@ -61,20 +60,22 @@ async def timeflip_status(client):
         mac_addr, firmware_revision, battery_level, internal_device_name
     )
 
-
-def disconnect_callback(client: AsyncClient):
-    timeflip_logger = get_logger()
-    timeflip_logger.warning(f"Disconnected from {client.address}")
-    cut_timeflip_connection_info("disconnected", client.address)
-
-
 async def connect_and_run(
     device_config,
     adapter_addr=None,
 ):
+    timeflip_logger = get_logger()
     mac_addr = device_config["mac_address"]
 
-    timeflip_logger = get_logger()
+
+    def disconnect_callback(client: AsyncClient):
+        timeflip_logger = get_logger()
+        timeflip_logger.warning(f"Disconnected from {client.address}")
+        cut_timeflip_connection_info("disconnected", client.address)
+
+        if 'actions' in device_config and 'on_disconnect' in device_config['actions']:
+            invoke_hook(device_config['actions']['on_disconnect'], [device_config['name'], device_config["mac_address"]])
+
 
     adapter_path = None
     if adapter_addr:
@@ -104,6 +105,9 @@ async def connect_and_run(
                 # setup
                 timeflip_logger.info(f"Connected to {mac_addr}")
                 cut_timeflip_connection_info("connected", client.address)
+
+                if 'actions' in device_config and 'on_connect' in device_config['actions']:
+                    invoke_hook(device_config['actions']['on_connect'], [device_config['name'], device_config["mac_address"]])
 
                 await client.setup(password=device_config["password"])
                 timeflip_logger.info(f"Password communicated to {mac_addr}")
@@ -153,23 +157,23 @@ async def actions_on_client(device_config, client: AsyncClient):
     async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
         facet_num = event_data[0]
 
-        if facet_num >= len(device_config["facets"]):
-            # Set to a value that was not defined
-            insert_event(
-                device_config["name"],
-                device_config["mac_address"],
-                facet_num,
-                "unassigned",
-                color_to_tuple("white"),
-            )
-        else:
-            insert_event(
-                device_config["name"],
-                device_config["mac_address"],
-                facet_num,
-                device_config["facets"][facet_num - 1]["value"],
-                device_config["facets"][facet_num - 1]["color_tuple"],
-            )
+        device_name = device_config["name"]
+        device_address = device_config["mac_address"]
+        facet_value = device_config["facets"][facet_num - 1]["value"] if facet_num < len(device_config["facets"]) else "unassigned"
+        facet_color = device_config["facets"][facet_num - 1]["color_tuple"] if facet_num < len(device_config["facets"]) else color_to_tuple("white")
+
+        insert_event(
+            device_name,
+            device_address,
+            facet_num,
+            facet_value,
+            facet_color)
+
+        if 'actions' in device_config and 'on_connect' in device_config['actions']:
+            invoke_hook(device_config['actions']['on_facet_change'], [device_name, device_address, facet_num, facet_value, facet_color])
+        
+
+
 
     await client.register_notify_facet_v3(facet_notify_callback)
 
