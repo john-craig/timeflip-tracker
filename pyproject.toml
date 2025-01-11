@@ -28,7 +28,7 @@ dependencies = [
     "pycodestyle",
     "pyflakes",
     "python-dotenv",
-    "pytimefliplib @ git+https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git@500eb35bced583fdf5429fd01aa6652ba1ca5ced",
+    "pytimefliplib @ git+https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git",
     "requests",
     "ruamel.yaml",
     "ruamel.yaml.clib",
