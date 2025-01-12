@@ -114,7 +114,7 @@ async def connect_and_run(
 
                 await actions_on_client(device_config, client)
 
-        except (BleakError, TimeFlipRuntimeError, RuntimeClientError) as e:
+        except (BleakError, TimeFlipRuntimeError, RuntimeClientError, TimeoutError) as e:
             timeflip_logger.error(f"Communication error connecting to {mac_addr}. {e}")
 
         await asyncio.sleep(30)
