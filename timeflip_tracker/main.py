@@ -38,16 +38,10 @@ async def main():
         all_tasks = asyncio.all_tasks(loop=loop)
         for task in all_tasks:
             task.cancel()
-        loop.run_until_complete(
-            asyncio.gather(
-                *all_tasks,
-                return_exceptions=True  # means all tasks get a chance to finish
-            )
-        )
 
         close_database()
         metrics_server.shutdown()
-        loop.close()
+        # loop.close()
 
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGTERM, handler)
@@ -61,7 +55,10 @@ async def main():
         )
     )
 
-    await asyncio.gather(*device_coroutines)
+    try:
+        await asyncio.gather(*device_coroutines)
+    except asyncio.exceptions.CancelledError:
+        pass
 
 
 def run_main():
