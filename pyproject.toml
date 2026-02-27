@@ -3,7 +3,10 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["timeflip_tracker"]
+package-dir = {"" = "timeflip_tracker/src"}
+
+[tool.setuptools.packages.find]
+where = ["timeflip_tracker/src"]
 
 [project]
 name = "timeflip_tracker"
@@ -41,3 +44,9 @@ requires-python = ">=3.8"
 [project.scripts]
 timeflip-tracker = "timeflip_tracker:run_main"
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["timeflip_tracker/src"]
+testpaths = ["timeflip_tracker/tests"]

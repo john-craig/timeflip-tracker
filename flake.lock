@@ -1,0 +1,44 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1771848320,
+        "narHash": "sha256-0MAd+0mun3K/Ns8JATeHT1sX28faLII5hVLq0L3BdZU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2fc6539b481e1d2569f25f8799236694180c0993",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "pytimefliplib": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1724519770,
+        "narHash": "sha256-/+W2fFvkMSbLY/tzrv0d44R2n6v2taQ8jVhfOvDHEzg=",
+        "owner": "pierre-24",
+        "repo": "pytimefliplib",
+        "rev": "aaf01843c4eb3e147fac0c92bfb45d43567306c6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pierre-24",
+        "repo": "pytimefliplib",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "pytimefliplib": "pytimefliplib"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

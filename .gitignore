@@ -236,3 +236,5 @@ cython_debug/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm+all
 config.yaml
+
+result
