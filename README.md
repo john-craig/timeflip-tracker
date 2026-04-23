@@ -46,5 +46,6 @@ Timeflip Tracker uses the [colour](https://pypi.org/project/colour/) library to 
 ## Usage
 The intended use-case for this project is to collect activity data from a Timeflip device and store it in a database. From the database, this information may be queried by other applications, such as Grafana (for which there is an example dashboard here). Currently, this project does not support its own UI for displaying Timeflip activity data, nor are there currently any plans to add such a feature, although pull requests are open.
 
+For local Nix-based Bluetooth testing, create an untracked `config.yaml` in the repository root and run `nix run .#timeflip-local-device`. The app uses that file through `CONFIG_PATH`, defaults to `LOG_LEVEL=INFO`, and checks that BlueZ is reachable before starting the tracker.
 
 If the Timeflip device is set onto a facet which is not defined in the configuration, the created event as an activity of "unassigned" and a color of white.

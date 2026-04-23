@@ -27,12 +27,18 @@ class DummyClient:
         self.address = "AA:BB"
         self.colors = []
         self.notify_callback = None
+        self.setup_callback = None
+        self.setup_password = None
 
     async def set_color(self, i, color):
         self.colors.append((i, color))
 
     async def register_notify_facet_v3(self, callback):
         self.notify_callback = callback
+
+    async def setup(self, facet_callback=None, password=None):
+        self.setup_callback = facet_callback
+        self.setup_password = password
 
     async def current_facet(self):
         return 1
@@ -98,8 +104,44 @@ def test_actions_on_client_sets_colors_and_inserts_event(monkeypatch):
 
     assert len(client.colors) == 12
     assert client.colors[0] == (0, (4, 5, 6))
-    assert inserted == [("dev1", "AA:BB", 1, "unassigned", (1, 2, 3))]
+    assert inserted == [("dev1", "AA:BB", 1, "work", (4, 5, 6))]
     assert hook_calls == []
+    assert ("info", "Device dev1 (AA:BB) changed to facet 1: work") in logger.messages
+
+
+def test_actions_on_client_passes_facet_callback_to_setup(monkeypatch):
+    logger = DummyLogger()
+    client = DummyClient()
+
+    monkeypatch.setattr(connection, "get_logger", lambda: logger)
+
+    async def fake_timeflip_status(_client):
+        return None
+
+    monkeypatch.setattr(connection, "timeflip_status", fake_timeflip_status)
+    monkeypatch.setattr(connection, "color_to_tuple", lambda value: (1, 2, 3))
+    monkeypatch.setattr(connection, "random_color_tuple", lambda: (9, 9, 9))
+    monkeypatch.setattr(connection, "insert_event", lambda *args: None)
+    monkeypatch.setattr(connection, "invoke_hook", lambda *args: None)
+
+    async def stop_sleep(_seconds):
+        raise StopLoop
+
+    monkeypatch.setattr(connection.asyncio, "sleep", stop_sleep)
+
+    device_config = {
+        "name": "dev1",
+        "mac_address": "AA:BB",
+        "password": "0000",
+        "facets": [{"value": "work"}],
+    }
+
+    with pytest.raises(StopLoop):
+        asyncio.run(connection.actions_on_client(device_config, client, password="0000"))
+
+    assert client.setup_password == "0000"
+    assert callable(client.setup_callback)
+    assert client.notify_callback is None
 
 
 def test_connect_and_run_resolves_adapter_and_invokes_connect_hook(monkeypatch):
@@ -114,8 +156,8 @@ def test_connect_and_run_resolves_adapter_and_invokes_connect_hook(monkeypatch):
 
     action_calls = []
 
-    async def fake_actions_on_client(device_config, client):
-        action_calls.append((device_config["name"], client.address))
+    async def fake_actions_on_client(device_config, client, password=None):
+        action_calls.append((device_config["name"], client.address, password))
         raise connection.BleakError("stop")
 
     monkeypatch.setattr(connection, "actions_on_client", fake_actions_on_client)
@@ -149,9 +191,6 @@ def test_connect_and_run_resolves_adapter_and_invokes_connect_hook(monkeypatch):
         async def __aexit__(self, exc_type, exc, tb):
             return False
 
-        async def setup(self, password):
-            seen_kwargs["password"] = password
-
     monkeypatch.setattr(connection, "AsyncClient", FakeAsyncClient)
 
     cfg = {
@@ -167,7 +206,6 @@ def test_connect_and_run_resolves_adapter_and_invokes_connect_hook(monkeypatch):
 
     assert seen_kwargs["address"] == "CC:DD"
     assert seen_kwargs["adapter"] == "hci0"
-    assert seen_kwargs["password"] == "0000"
     assert any(call[0] == "connected" for call in metric_calls)
     assert hook_calls and hook_calls[0][0] == "echo connect"
-    assert action_calls == [("dev", "CC:DD")]
+    assert action_calls == [("dev", "CC:DD", "0000")]

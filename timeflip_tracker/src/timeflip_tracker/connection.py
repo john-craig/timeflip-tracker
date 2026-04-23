@@ -2,7 +2,7 @@ import asyncio
 import sys
 from typing import Any, Callable, Coroutine, List, Tuple
 
-from bleak import BleakClient, BleakError, BleakGATTCharacteristic, BleakScanner
+from bleak import BleakClient, BleakError, BleakScanner
 from bleak.backends.device import BLEDevice
 from bluetooth_adapters import get_adapters
 from timeflip_tracker.colors import color_to_tuple, random_color_tuple
@@ -109,10 +109,11 @@ async def connect_and_run(
                 if 'actions' in device_config and 'on_connect' in device_config['actions']:
                     invoke_hook(device_config['actions']['on_connect'], [device_config['name'], device_config["mac_address"]])
 
-                await client.setup(password=device_config["password"])
-                timeflip_logger.info(f"Password communicated to {mac_addr}")
-
-                await actions_on_client(device_config, client)
+                await actions_on_client(
+                    device_config,
+                    client,
+                    password=device_config["password"],
+                )
 
         except (BleakError, TimeFlipRuntimeError, RuntimeClientError, TimeoutError) as e:
             timeflip_logger.error(f"Communication error connecting to {mac_addr}. {e}")
@@ -120,10 +121,50 @@ async def connect_and_run(
         await asyncio.sleep(15)
 
 
-async def actions_on_client(device_config, client: AsyncClient):
+async def actions_on_client(device_config, client: AsyncClient, password=None):
     mac_addr = device_config["mac_address"]
     timeflip_logger = get_logger()
     timeflip_logger.info(f"Connected to device {mac_addr}")
+    last_reported_facet = None
+
+    def handle_facet_event(facet_num):
+        nonlocal last_reported_facet
+
+        device_name = device_config["name"]
+        device_address = device_config["mac_address"]
+        facet_index = facet_num - 1
+        configured_facets = device_config["facets"]
+
+        if 0 <= facet_index < len(configured_facets):
+            facet = configured_facets[facet_index]
+            facet_value = facet["value"]
+            facet_color = facet.get("color_tuple", color_to_tuple("white"))
+        else:
+            facet_value = "unassigned"
+            facet_color = color_to_tuple("white")
+
+        if facet_num != last_reported_facet:
+            timeflip_logger.info(
+                f"Device {device_name} ({device_address}) changed to facet {facet_num}: {facet_value}"
+            )
+            last_reported_facet = facet_num
+
+        insert_event(
+            device_name,
+            device_address,
+            facet_num,
+            facet_value,
+            facet_color)
+
+        if 'actions' in device_config and 'on_facet_change' in device_config['actions']:
+            invoke_hook(device_config['actions']['on_facet_change'], [device_name, device_address, facet_num, facet_value, facet_color])
+
+    def setup_facet_callback(facet_num):
+        handle_facet_event(facet_num)
+
+    if password is not None:
+        await client.setup(facet_callback=setup_facet_callback, password=password)
+        timeflip_logger.info(f"Password communicated to {mac_addr}")
 
     await timeflip_status(client)
 
@@ -154,32 +195,9 @@ async def actions_on_client(device_config, client: AsyncClient):
             f"Device {mac_addr} facet {i+1} set to color {color_tuple}"
         )
 
-    async def facet_notify_callback(sender: BleakGATTCharacteristic, event_data):
-        facet_num = event_data[0]
-
-        device_name = device_config["name"]
-        device_address = device_config["mac_address"]
-        facet_value = device_config["facets"][facet_num - 1]["value"] if facet_num < len(device_config["facets"]) else "unassigned"
-        facet_color = device_config["facets"][facet_num - 1]["color_tuple"] if facet_num < len(device_config["facets"]) else color_to_tuple("white")
-
-        insert_event(
-            device_name,
-            device_address,
-            facet_num,
-            facet_value,
-            facet_color)
-
-        if 'actions' in device_config and 'on_connect' in device_config['actions']:
-            invoke_hook(device_config['actions']['on_facet_change'], [device_name, device_address, facet_num, facet_value, facet_color])
-        
-
-
-
-    await client.register_notify_facet_v3(facet_notify_callback)
-
     # Post the current facet on connect
     current_facet = await client.current_facet()
-    await facet_notify_callback(None, [current_facet])
+    handle_facet_event(current_facet)
 
     while True:
         await asyncio.sleep(600)

@@ -19,17 +19,17 @@
     "pytimefliplib": {
       "flake": false,
       "locked": {
-        "lastModified": 1724519770,
-        "narHash": "sha256-/+W2fFvkMSbLY/tzrv0d44R2n6v2taQ8jVhfOvDHEzg=",
-        "owner": "pierre-24",
-        "repo": "pytimefliplib",
-        "rev": "aaf01843c4eb3e147fac0c92bfb45d43567306c6",
-        "type": "github"
+        "lastModified": 1776904909,
+        "narHash": "sha256-v1eSr2L9JEEEHzYjgcQI1C7pKSLoEgJZtNlXCI+VU3s=",
+        "ref": "refs/heads/master",
+        "rev": "cd618a168545432f907213d76b7c8db3442a67f7",
+        "revCount": 48,
+        "type": "git",
+        "url": "https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git"
       },
       "original": {
-        "owner": "pierre-24",
-        "repo": "pytimefliplib",
-        "type": "github"
+        "type": "git",
+        "url": "https://gitea.chiliahedron.wtf/john-craig/pytimefliplib.git"
       }
     },
     "root": {
